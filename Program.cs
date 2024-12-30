@@ -1,12 +1,15 @@
 using Application;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using SQLitePCL;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// Initialize SQLite provider
+Batteries.Init();
+
 builder.Services.AddControllers();
 builder.Services
-	//.AddApplicationLayer(builder.Configuration)
 	.AddEndpointsApiExplorer()
 	.AddSwaggerGen()
 	.AddApplicationLayer(builder.Configuration)
@@ -16,6 +19,13 @@ builder.Services
 	});
 
 WebApplication app = builder.Build();
+
+// Apply pending migrations
+using (IServiceScope scope = app.Services.CreateScope())
+{
+	DatabaseContext dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+	dbContext.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
